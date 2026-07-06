@@ -7,19 +7,28 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9f9f9;
+            /* Aquí colocamos tu imagen navideña de fondo */
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLGLFWsj2sYkBMIOkYsncyk46HsjGhN36mFOaDJg7rPDwjSulAimPNA6_N&s=10');
+            background-repeat: repeat;
+            background-attachment: fixed;
             margin: 0;
             padding: 20px;
             color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
         h1 {
             text-align: center;
             margin-bottom: 30px;
             color: #111;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.85);
+            display: table;
+            margin: 0 auto 30px auto;
+            padding: 10px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         .grid {
             display: grid;
@@ -27,50 +36,67 @@
             gap: 25px;
         }
         .card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            padding: 15px;
+            background: rgba(255, 255, 255, 0.93); /* Blanco semi-transparente para resaltar sobre el fondo */
+            border-radius: 16px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            padding: 20px;
             text-align: center;
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(255,255,255,0.5);
         }
         .card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
         }
         .card img {
             max-width: 100%;
             height: auto;
-            border-radius: 8px;
+            border-radius: 12px;
             object-fit: cover;
+            background-color: #fff;
         }
         .card h3 {
             font-size: 1.1rem;
             margin: 15px 0 10px 0;
             color: #222;
+            height: 45px;
+            overflow: hidden;
         }
         .price {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: bold;
-            color: #10b981;
+            color: #d32f2f; /* Rojo navideño para combinar con el fondo */
             margin-bottom: 15px;
         }
         .btn {
-            background-color: #000;
+            background-color: #2e7d32; /* Verde navideño elegante */
             color: #fff;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 20px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: 6px;
+            font-weight: bold;
             width: 100%;
+            transition: background-color 0.2s;
         }
         .btn:hover {
-            background-color: #222;
+            background-color: #1b5e20;
         }
         .error, .loading {
             text-align: center;
             font-size: 1.2rem;
             margin-top: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: #c62828;
         }
     </style>
 </head>
@@ -78,7 +104,7 @@
 
     <div class="container">
         <h1>Reniverse Shop</h1>
-        <div id="loading" class="loading">Cargando tus productos de Printify...</div>
+        <div id="loading" class="loading">🎄 Cargando tus productos navideños...</div>
         <div id="productos-grid" class="grid"></div>
     </div>
 
@@ -86,31 +112,30 @@
         const grid = document.getElementById('productos-grid');
         const loading = document.getElementById('loading');
 
-        // Llamamos al puente seguro de tu Netlify
-        fetch('https://netlify.app')
+        // Usamos la ruta directa para evitar problemas de conexión entre servidores externos
+        fetch('/.netlify/functions/obtener-productos')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor puente');
+                    throw new Error('El puente del servidor no respondió correctamente.');
                 }
                 return response.json();
             })
             .then(res => {
                 loading.style.display = 'none';
                 
-                // Printify devuelve los artículos dentro de un arreglo llamado "data"
+                // Extraemos los artículos devueltos por la API de Printify
                 const productos = res.data || [];
                 
                 if (productos.length === 0) {
-                    grid.innerHTML = '<p class="error">No se encontraron productos en esta tienda de Printify.</p>';
+                    grid.innerHTML = '<div class="error"><p>No se encontraron productos en borrador ni publicados en tu tienda API de Printify.</p><p style="font-size:0.9rem;color:#666;">Asegúrate de clonar o arrastrar al menos un diseño a tu tienda "Reniverse API" en Printify.</p></div>';
                     return;
                 }
 
                 productos.forEach(prod => {
-                    // Tomamos la primera imagen promocional disponible (mockup)
+                    // Seleccionar la primera imagen promocional disponible (Mockup)
                     const imagenUrl = prod.images && prod.images.length > 0 ? prod.images[0].src : 'https://placeholder.com';
                     
-                    // Convertimos el precio base centavos a un formato legible (ej: 1500 centavos -> $15.00)
-                    // Tomamos el precio de la primera variante disponible
+                    // Convertir centavos de Printify a formato de moneda normal ($1500 centavos -> $15.00)
                     const precioBase = prod.variants && prod.variants.length > 0 ? (prod.variants[0].price / 100).toFixed(2) : '0.00';
 
                     const card = document.createElement('div');
@@ -119,7 +144,7 @@
                         <img src="${imagenUrl}" alt="${prod.title}">
                         <h3>${prod.title}</h3>
                         <p class="price">$${precioBase}</p>
-                        <button class="btn">Ver detalles</button>
+                        <button class="btn">Comprar Ahora</button>
                     `;
                     grid.appendChild(card);
                 });
@@ -129,8 +154,8 @@
                 loading.style.display = 'none';
                 grid.innerHTML = `
                     <div class="error">
-                        <p>❌ Hubo un error al cargar la tienda.</p>
-                        <p style="font-size: 0.9rem; color: #666;">Detalle: ${error.message}</p>
+                        <p>❌ Error al conectar con Printify.</p>
+                        <p style="font-size: 0.9rem; color: #666;">Causa técnica: ${error.message}</p>
                     </div>
                 `;
             });
