@@ -3,74 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Tienda Printify</title>
+    <title>Reniverse Shop</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
-        h1 { text-align: center; color: #333; }
-        .grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; padding: 20px; }
-        .tarjeta-producto { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        .tarjeta-producto img { max-width: 100%; height: auto; border-radius: 4px; }
-        .tarjeta-producto h3 { font-size: 1.1rem; color: #333; margin: 10px 0; }
-        .tarjeta-producto p { color: #28a745; font-weight: bold; font-size: 1.2rem; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #111;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .card h3 {
+            font-size: 1.1rem;
+            margin: 15px 0 10px 0;
+            color: #222;
+        }
+        .price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #10b981;
+            margin-bottom: 15px;
+        }
+        .btn {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 6px;
+            width: 100%;
+        }
+        .btn:hover {
+            background-color: #222;
+        }
+        .error, .loading {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 50px;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Mi Tienda en GitHub</h1>
-    <div id="contenedor-productos" class="grid-productos">Cargando productos...</div>
+    <div class="container">
+        <h1>Reniverse Shop</h1>
+        <div id="loading" class="loading">Cargando tus productos de Printify...</div>
+        <div id="productos-grid" class="grid"></div>
+    </div>
 
     <script>
-        // CONFIGURACIÓN: Reemplaza estos dos valores
-        const API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6ImMwNTJmYzJkOTYwZDc2MDZmYjI1YzY5NGQwODljMGM5NjJlNzM1MjRmODQ0MWEzMmM5OTAwYWU2ZDc1OThkMTk4MTc2ZGM3MGY3NmM4ZmI2IiwiaWF0IjoxNzgzMzc2ODAxLjgxMjUxOSwibmJmIjoxNzgzMzc2ODAxLjgxMjUyMiwiZXhwIjoxODE0OTEyODAxLjgwNjk2NSwic3ViIjoiMjc3Njk3ODEiLCJzY29wZXMiOlsic2hvcHMubWFuYWdlIiwic2hvcHMucmVhZCIsImNhdGFsb2cucmVhZCIsIm9yZGVycy5yZWFkIiwib3JkZXJzLndyaXRlIiwicHJvZHVjdHMucmVhZCIsInByb2R1Y3RzLndyaXRlIiwid2ViaG9va3MucmVhZCIsIndlYmhvb2tzLndyaXRlIiwidXBsb2Fkcy5yZWFkIiwidXBsb2Fkcy53cml0ZSIsInByaW50X3Byb3ZpZGVycy5yZWFkIiwidXNlci5pbmZvIl19.ipN2n7TB1UAsTOr9Ex57r2V75mF2MGYpZ8KIkPYMcsPzz_cOmRY1ELneK5Gelo45keqR2uAwTqaN_mJPaxuP2bRiJhuPluYLn0T6b2VGeEy5TcUInS0UXDxM6UCv99liN1PvP-_p1YWYEEjO6-_HHmkd2THSpS1j2w7qLg30k7Le3jrAr4AlLy8g8dKvNKxMCosdzGM1q53YLBDQNrTM8RRhGOg_xQUSDEDdCdUpaHBtX1j2Lueu1Kaot9r001EE02iNbseAurYOz47XjH-tHoqkj6kja5TBAo88Z1S9Z8e8E4lATSu-SiGB65_6kIYcrf88oOhAwbItVjp44Oe7VEMP2PiaMKOoQ6pIio9Mou8Nlmd1oInxdQrdRZzqy_0e5hQokeAq56XCSeNwtjta3UmtRajpqqpT-9S39eMfegxCWbY4l1Onxz-4cSbYtZAX8AY-GWf6ygzVqVqemFpvJ-JXHjrsjcNqD5ISW8A6GdL-0APZPjDUJ5Q16fLNoa-_53THuM5Mps9bYigZ2MOHwqWdEw1QcvP4lER3nlM9zsgN-Ce7AOPALXNny0aI_yjlpQj9O4FvqKb4nHz85Ix2xVsWIVsf2rsV0sPhVgZ6nAmZDi38NyAnobHgeLb2QEPrINgyxaH1YcynRe4ZPNcV_u1hci9o2m-EP0AMAXOq36I"; 
-        const ID_TIENDA = "28159778"; 
+        const grid = document.getElementById('productos-grid');
+        const loading = document.getElementById('loading');
 
-        async function cargarProductos() {
-            const url = `https://corsproxy.io{ID_TIENDA}/products.json`;
-            const contenedor = document.getElementById('contenedor-productos');
-
-            try {
-                const respuesta = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${API_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!respuesta.ok) throw new Error('Error al conectar con Printify');
-
-                const datos = await respuesta.json();
-                contenedor.innerHTML = ''; // Limpiar mensaje de carga
-
-                if(datos.data.length === 0) {
-                    contenedor.innerHTML = '<p>No hay productos visibles en esta tienda.</p>';
+        // Llamamos al puente seguro de tu Netlify
+        fetch('https://netlify.app')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor puente');
+                }
+                return response.json();
+            })
+            .then(res => {
+                loading.style.display = 'none';
+                
+                // Printify devuelve los artículos dentro de un arreglo llamado "data"
+                const productos = res.data || [];
+                
+                if (productos.length === 0) {
+                    grid.innerHTML = '<p class="error">No se encontraron productos en esta tienda de Printify.</p>';
                     return;
                 }
 
-                datos.data.forEach(producto => {
-                    // Tomamos la primera imagen disponible del producto
-                    const imagenUrl = producto.images[0] ? producto.images[0].src : 'https://placeholder.com';
-                    // Tomamos el precio de la primera variante (dividido por 100 si viene en centavos)
-                    const precio = (producto.variants[0].price / 100).toFixed(2);
+                productos.forEach(prod => {
+                    // Tomamos la primera imagen promocional disponible (mockup)
+                    const imagenUrl = prod.images && prod.images.length > 0 ? prod.images[0].src : 'https://placeholder.com';
+                    
+                    // Convertimos el precio base centavos a un formato legible (ej: 1500 centavos -> $15.00)
+                    // Tomamos el precio de la primera variante disponible
+                    const precioBase = prod.variants && prod.variants.length > 0 ? (prod.variants[0].price / 100).toFixed(2) : '0.00';
 
-                    const tarjeta = document.createElement('div');
-                    tarjeta.className = 'tarjeta-producto';
-                    tarjeta.innerHTML = `
-                        <img src="${imagenUrl}" alt="${producto.title}">
-                        <h3>${producto.title}</h3>
-                        <p>$${precio} USD</p>
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <img src="${imagenUrl}" alt="${prod.title}">
+                        <h3>${prod.title}</h3>
+                        <p class="price">$${precioBase}</p>
+                        <button class="btn">Ver detalles</button>
                     `;
-                    contenedor.append(tarjeta);
+                    grid.appendChild(card);
                 });
-
-            } catch (error) {
+            })
+            .catch(error => {
                 console.error(error);
-                contenedor.innerHTML = '<p>Hubo un error al cargar los productos. Revisa tu Token e ID.</p>';
-            }
-        }
-
-        // Ejecutar la función al cargar la página
-        cargarProductos();
+                loading.style.display = 'none';
+                grid.innerHTML = `
+                    <div class="error">
+                        <p>❌ Hubo un error al cargar la tienda.</p>
+                        <p style="font-size: 0.9rem; color: #666;">Detalle: ${error.message}</p>
+                    </div>
+                `;
+            });
     </script>
 </body>
 </html>
