@@ -13,30 +13,22 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // Importamos dinámicamente fetch para que el servidor de Netlify no falle
-    const { default: fetch } = await import('node-fetch');
-
+    // Usamos el fetch global directo del sistema
     const response = await fetch(`https://printify.com{SHOP_ID}/products.json`, {
       method: 'GET',
       headers: { 
-        'Authorization': `Bearer ${TOKEN}`,
-        'User-Agent': 'ReniverseShopApp/1.0'
+        'Authorization': `Bearer ${TOKEN}`
       }
     });
-
-    if (!response.ok) {
-      throw new Error(`Printify respondió con código: ${response.status}`);
-    }
 
     const data = await response.json();
 
     return {
-      statusCode: 200,
+      statusCode: response.status,
       headers,
       body: JSON.stringify(data)
     };
   } catch (error) {
-    console.error("Error en la función:", error);
     return { 
       statusCode: 500, 
       headers,
