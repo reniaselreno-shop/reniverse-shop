@@ -1,22 +1,21 @@
 exports.handler = async function(event, context) {
-  // Netlify inyectará de forma invisible los valores que guardamos en su panel
   const SHOP_ID = process.env.PRINTIFY_SHOP_ID;
   const TOKEN = process.env.PRINTIFY_TOKEN;
 
-  // Cabeceras de seguridad CORS indispensables para que GitHub Pages pueda leer los datos
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET, OPTIONS"
   };
 
-  // Responder de inmediato si el navegador envía una petición de verificación previa (OPTIONS)
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
   }
 
   try {
-    // Consulta directa a la API de Printify en el backend
+    // Importamos dinámicamente fetch para que el servidor de Netlify no falle
+    const { default: fetch } = await import('node-fetch');
+
     const response = await fetch(`https://printify.com{SHOP_ID}/products.json`, {
       method: 'GET',
       headers: { 
@@ -26,7 +25,7 @@ exports.handler = async function(event, context) {
     });
 
     if (!response.ok) {
-      throw new Error(`Printify respondió con código de estado: ${response.status}`);
+      throw new Error(`Printify respondió con código: ${response.status}`);
     }
 
     const data = await response.json();
@@ -37,7 +36,7 @@ exports.handler = async function(event, context) {
       body: JSON.stringify(data)
     };
   } catch (error) {
-    console.error("Error en la función serverless:", error);
+    console.error("Error en la función:", error);
     return { 
       statusCode: 500, 
       headers,
