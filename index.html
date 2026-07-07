@@ -96,6 +96,87 @@
         .error {
             color: #c62828;
         }
+
+        /* Estilos de la Ventana Flotante (Modal) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            overflow-y: auto;
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 16px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .close-btn {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+        }
+        .close-btn:hover {
+            color: #000;
+        }
+        .modal-left {
+            flex: 1;
+            min-width: 300px;
+        }
+        .modal-right {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-modal-img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .thumbnails-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .thumb-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .thumb-img:hover, .thumb-img.active {
+            border-color: #2e7d32;
+        }
+        .modal-description {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -106,9 +187,38 @@
         <div id="productos-grid" class="grid"></div>
     </div>
 
+    <!-- Ventana Flotante (Detalles del Producto) -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal">&times;</span>
+            <div class="modal-left">
+                <img id="modal-main-image" src="" alt="Imagen principal">
+                <div id="modal-thumbnails" class="thumbnails-container"></div>
+            </div>
+            <div class="modal-right">
+                <h2 id="modal-title" style="margin-top:0;"></h2>
+                <div id="modal-price" class="price" style="font-size: 1.6rem;"></div>
+                <div id="modal-description" class="modal-description"></div>
+                <button class="btn" id="add-to-cart-btn" style="margin-top: auto;">🛒 Agregar al Carrito</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const grid = document.getElementById('productos-grid');
         const loading = document.getElementById('loading');
+        
+        // Elementos del Modal
+        const modal = document.getElementById('product-modal');
+        const closeModal = document.getElementById('close-modal');
+        const modalMainImage = document.getElementById('modal-main-image');
+        const modalThumbnails = document.getElementById('modal-thumbnails');
+        const modalTitle = document.getElementById('modal-title');
+        const modalPrice = document.getElementById('modal-price');
+        const modalDescription = document.getElementById('modal-description');
+        const addToCartBtn = document.getElementById('add-to-cart-btn');
+
+        let productosCargados = [];
 
         fetch('/.netlify/functions/obtener-productos')
             .then(response => {
@@ -120,33 +230,28 @@
             .then(res => {
                 loading.style.display = 'none';
                 
-                // Extrae los productos sin importar el formato en que vengan de la API
-                let productos = [];
                 if (res && res.data) {
-                    productos = res.data;
+                    productosCargados = res.data;
                 } else if (Array.isArray(res)) {
-                    productos = res;
+                    productosCargados = res;
                 } else if (res && typeof res === 'object') {
-                    productos = res.current_page_items || [];
+                    productosCargados = res.current_page_items || [];
                 }
                 
-                if (productos.length === 0) {
-                    grid.innerHTML = '<div class="error"><p>No se encontraron productos en tu tienda de Printify.</p><p style="font-size:0.9rem;color:#666;">Asegúrate de tener al menos un artículo creado en tu panel de Printify.</p></div>';
+                if (productosCargados.length === 0) {
+                    grid.innerHTML = '<div class="error"><p>No se encontraron productos en tu tienda de Printify.</p></div>';
                     return;
                 }
 
-                productos.forEach(prod => {
-                    // Sistema blindado para capturar la imagen del mockup de la maleta
+                productosCargados.forEach((prod, index) => {
                     let imagenUrl = 'https://placeholder.com';
                     if (prod.images && prod.images.length > 0) {
                         imagenUrl = prod.images[0].src || prod.images[0] || imagenUrl;
                     }
                     
-                    // Sistema blindado para calcular el precio base del producto
                     let precioBase = '0.00';
                     if (prod.variants && prod.variants.length > 0) {
-                        const primeraVariante = prod.variants[0];
-                        const precioOriginal = primeraVariante.price || primeraVariante.cost || 0;
+                        const precioOriginal = prod.variants[0].price || prod.variants[0].cost || 0;
                         precioBase = (precioOriginal / 100).toFixed(2);
                     }
 
@@ -156,7 +261,7 @@
                         <img src="${imagenUrl}" alt="${prod.title || 'Producto'}">
                         <h3>${prod.title || 'Sin título'}</h3>
                         <p class="price">$${precioBase}</p>
-                        <button class="btn">Comprar Ahora</button>
+                        <button class="btn" onclick="abrirDetalles(${index})">🔍 Ver más</button>
                     `;
                     grid.appendChild(card);
                 });
@@ -164,13 +269,21 @@
             .catch(error => {
                 console.error(error);
                 loading.style.display = 'none';
-                grid.innerHTML = `
-                    <div class="error">
-                        <p>❌ Error al conectar con Printify.</p>
-                        <p style="font-size: 0.9rem; color: #666;">Causa técnica: ${error.message}</p>
-                    </div>
-                `;
+                grid.innerHTML = `<div class="error"><p>❌ Error: ${error.message}</p></div>`;
             });
-    </script>
-</body>
-</html>
+
+        // Función para abrir la ventana flotante con los mockups completos
+        window.abrirDetalles = function(index) {
+            const prod = productosCargados[index];
+            if (!prod) return;
+
+            modalTitle.innerText = prod.title || 'Producto';
+            modalDescription.innerHTML = prod.description || 'Sin descripción disponible por el momento.';
+            
+            let precioBase = '0.00';
+            if (prod.variants && prod.variants.length > 0) {
+                precioBase = (prod.variants[0].price / 100).toFixed(2);
+            }
+            modalPrice.innerText = `$${precioBase}`;
+
+// Limpiar fotos anterioresmodalThumbnails.innerHTML = '';// Cargar Mockups dinámicamenteif (prod.images && prod.images.length > 0) {modalMainImage.src = prod.images[0].src || prod.images[0];prod.images.forEach((img, i) => {const imgSrc = img.src || img;const thumb = document.createElement('img');thumb.className = 'thumb-img' + (i === 0 ? ' active' : '');thumb.src = imgSrc;// Al hacer clic en una miniatura cambia la foto grandethumb.onclick = function() {document.querySelectorAll('.thumb-img').forEach(t => t.classList.remove('active'));thumb.classList.add('active');modalMainImage.src = imgSrc;};modalThumbnails.appendChild(thumb);});} else {modalMainImage.src = 'placeholder.com';}// Guardar ID en el botón de agregaraddToCartBtn.onclick = function() {alert(¡Añadido al carrito! ID Variant: ${prod.variants ? prod.variants[0].id : 'N/A'});};modal.style.display = 'block';};// Cerrar Ventana FlotantecloseModal.onclick = function() {modal.style.display = 'none';};window.onclick = function(event) {if (event.target === modal) {modal.style.display = 'none';}};
