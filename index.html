@@ -48,7 +48,7 @@
         }
         .card img {
             max-width: 100%;
-            height: auto;
+            height: 200px;
             border-radius: 12px;
             object-fit: cover;
             background-color: #fff;
@@ -102,7 +102,6 @@
 
     <div class="container">
         <h1>Reniverse Shop</h1>
-        <!-- Mensaje personalizado con el reno -->
         <div id="loading" class="loading">🦌 Cargando tus productos renianos...</div>
         <div id="productos-grid" class="grid"></div>
     </div>
@@ -111,7 +110,6 @@
         const grid = document.getElementById('productos-grid');
         const loading = document.getElementById('loading');
 
-        // fetch corregido apuntando a obtener-productos de Netlify
         fetch('/.netlify/functions/obtener-productos')
             .then(response => {
                 if (!response.ok) {
@@ -122,23 +120,41 @@
             .then(res => {
                 loading.style.display = 'none';
                 
-                // Mapeamos los datos de la respuesta
-                const productos = res.data || res || [];
+                // Extrae los productos sin importar el formato en que vengan de la API
+                let productos = [];
+                if (res && res.data) {
+                    productos = res.data;
+                } else if (Array.isArray(res)) {
+                    productos = res;
+                } else if (res && typeof res === 'object') {
+                    productos = res.current_page_items || [];
+                }
                 
-                if (!Array.isArray(productos) || productos.length === 0) {
+                if (productos.length === 0) {
                     grid.innerHTML = '<div class="error"><p>No se encontraron productos en tu tienda de Printify.</p><p style="font-size:0.9rem;color:#666;">Asegúrate de tener al menos un artículo creado en tu panel de Printify.</p></div>';
                     return;
                 }
 
                 productos.forEach(prod => {
-                    const imagenUrl = prod.images && prod.images.length > 0 ? prod.images[0].src : 'https://placeholder.com';
-                    const precioBase = prod.variants && prod.variants.length > 0 ? (prod.variants[0].price / 100).toFixed(2) : '0.00';
+                    // Sistema blindado para capturar la imagen del mockup de la maleta
+                    let imagenUrl = 'https://placeholder.com';
+                    if (prod.images && prod.images.length > 0) {
+                        imagenUrl = prod.images[0].src || prod.images[0] || imagenUrl;
+                    }
+                    
+                    // Sistema blindado para calcular el precio base del producto
+                    let precioBase = '0.00';
+                    if (prod.variants && prod.variants.length > 0) {
+                        const primeraVariante = prod.variants[0];
+                        const precioOriginal = primeraVariante.price || primeraVariante.cost || 0;
+                        precioBase = (precioOriginal / 100).toFixed(2);
+                    }
 
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.innerHTML = `
-                        <img src="${imagenUrl}" alt="${prod.title}">
-                        <h3>${prod.title}</h3>
+                        <img src="${imagenUrl}" alt="${prod.title || 'Producto'}">
+                        <h3>${prod.title || 'Sin título'}</h3>
                         <p class="price">$${precioBase}</p>
                         <button class="btn">Comprar Ahora</button>
                     `;
