@@ -96,8 +96,6 @@
         .error {
             color: #c62828;
         }
-
-        /* Estilos de la Ventana Flotante (Modal) */
         .modal {
             display: none;
             position: fixed;
@@ -187,12 +185,11 @@
         <div id="productos-grid" class="grid"></div>
     </div>
 
-    <!-- Ventana Flotante (Detalles del Producto) -->
     <div id="product-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="close-modal">&times;</span>
             <div class="modal-left">
-                <img id="modal-main-image" src="" alt="Imagen principal">
+                <img id="modal-main-image" class="main-modal-img" src="" alt="Imagen principal">
                 <div id="modal-thumbnails" class="thumbnails-container"></div>
             </div>
             <div class="modal-right">
@@ -208,7 +205,6 @@
         const grid = document.getElementById('productos-grid');
         const loading = document.getElementById('loading');
         
-        // Elementos del Modal
         const modal = document.getElementById('product-modal');
         const closeModal = document.getElementById('close-modal');
         const modalMainImage = document.getElementById('modal-main-image');
@@ -222,24 +218,24 @@
 
         fetch('/.netlify/functions/obtener-productos')
             .then(response => {
+                loading.style.display = 'none'; // Desactiva el cartel pase lo que pase
                 if (!response.ok) {
-                    throw new Error('El puente del servidor no respondió correctamente.');
+                    throw new Error('El servidor backend reportó un error técnico de conexión.');
                 }
                 return response.json();
             })
             .then(res => {
-                loading.style.display = 'none';
-                
-                if (res && res.data) {
-                    productosCargados = res.data;
-                } else if (Array.isArray(res)) {
-                    productosCargados = res;
-                } else if (res && typeof res === 'object') {
-                    productosCargados = res.current_page_items || [];
+                if (res && res.error) {
+                    throw new Error(res.error);
                 }
+
+                // Extraer productos de forma segura
+                if (res && res.data) productosCargados = res.data;
+                else if (Array.isArray(res)) productosCargados = res;
+                else if (res && res.current_page_items) productosCargados = res.current_page_items;
                 
                 if (productosCargados.length === 0) {
-                    grid.innerHTML = '<div class="error"><p>No se encontraron productos en tu tienda de Printify.</p></div>';
+                    grid.innerHTML = '<div class="error"><p>No hay productos activos en tu Printify.</p><p style="font-size:0.9rem;color:#666;">Verifica tener tu maleta guardada en tu panel.</p></div>';
                     return;
                 }
 
@@ -267,23 +263,20 @@
                 });
             })
             .catch(error => {
-                console.error(error);
                 loading.style.display = 'none';
-                grid.innerHTML = `<div class="error"><p>❌ Error: ${error.message}</p></div>`;
+                console.error(error);
+                grid.innerHTML = `<div class="error"><p>❌ Error al conectar con Printify.</p><p style="font-size: 0.9rem; color: #666;">Causa: ${error.message}</p></div>`;
             });
 
-        // Función para abrir la ventana flotante con los mockups completos
         window.abrirDetalles = function(index) {
             const prod = productosCargados[index];
             if (!prod) return;
 
             modalTitle.innerText = prod.title || 'Producto';
-            modalDescription.innerHTML = prod.description || 'Sin descripción disponible por el momento.';
+            modalDescription.innerHTML = prod.description || 'Sin descripción disponible.';
             
             let precioBase = '0.00';
             if (prod.variants && prod.variants.length > 0) {
                 precioBase = (prod.variants[0].price / 100).toFixed(2);
             }
-            modalPrice.innerText = `$${precioBase}`;
-
-// Limpiar fotos anterioresmodalThumbnails.innerHTML = '';// Cargar Mockups dinámicamenteif (prod.images && prod.images.length > 0) {modalMainImage.src = prod.images[0].src || prod.images[0];prod.images.forEach((img, i) => {const imgSrc = img.src || img;const thumb = document.createElement('img');thumb.className = 'thumb-img' + (i === 0 ? ' active' : '');thumb.src = imgSrc;// Al hacer clic en una miniatura cambia la foto grandethumb.onclick = function() {document.querySelectorAll('.thumb-img').forEach(t => t.classList.remove('active'));thumb.classList.add('active');modalMainImage.src = imgSrc;};modalThumbnails.appendChild(thumb);});} else {modalMainImage.src = 'placeholder.com';}// Guardar ID en el botón de agregaraddToCartBtn.onclick = function() {alert(¡Añadido al carrito! ID Variant: ${prod.variants ? prod.variants[0].id : 'N/A'});};modal.style.display = 'block';};// Cerrar Ventana FlotantecloseModal.onclick = function() {modal.style.display = 'none';};window.onclick = function(event) {if (event.target === modal) {modal.style.display = 'none';}};
+modalPrice.innerText = $${precioBase};modalThumbnails.innerHTML = '';if (prod.images && prod.images.length > 0) {modalMainImage.src = prod.images[0].src || prod.images[0];prod.images.forEach((img, i) => {const imgSrc = img.src || img;const thumb = document.createElement('img');thumb.className = 'thumb-img' + (i === 0 ? ' active' : '');thumb.src = imgSrc;thumb.onclick = function() {document.querySelectorAll('.thumb-img').forEach(t => t.classList.remove('active'));thumb.classList.add('active');modalMainImage.src = imgSrc;};modalThumbnails.appendChild(thumb);});} else {modalMainImage.src = 'placeholder.com';}addToCartBtn.onclick = function() {alert(Añadido al carrito: ${prod.title});};modal.style.display = 'block';};closeModal.onclick = function() { modal.style.display = 'none'; };window.onclick = function(event) { if (event.target === modal) modal.style.display = 'none'; };
