@@ -1,5 +1,3 @@
-const https = require('https');
-
 exports.handler = async function(event, context) {
     const SHOP_ID = process.env.PRINTIFY_SHOP_ID;
     const TOKEN = process.env.PRINTIFY_TOKEN;
@@ -14,41 +12,34 @@ exports.handler = async function(event, context) {
         return { statusCode: 200, headers, body: "" };
     }
 
-    return new Promise((resolve) => {
-        const options = {
-            hostname: 'api.printify.com',
-            path: `/v1/shops/${SHOP_ID}/products.json`,
+    try {
+        const response = await fetch(`https://printify.com{SHOP_ID}/products.json`, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${TOKEN}`,
-                'User-Agent': 'NetlifyFunction'
+                'Authorization': `Bearer ${TOKEN}`
             }
-        };
-
-        const req = https.request(options, (res) => {
-            let data = '';
-
-            res.on('data', (chunk) => {
-                data += chunk;
-            });
-
-            res.on('end', () => {
-                resolve({
-                    statusCode: res.statusCode,
-                    headers,
-                    body: data
-                });
-            });
         });
 
-        req.on('error', (e) => {
-            resolve({
-                statusCode: 500,
+        if (!response.ok) {
+            return {
+                statusCode: response.status,
                 headers,
-                body: JSON.stringify({ error: e.message })
-            });
-        });
+                body: JSON.stringify({ error: `Error en Printify: ${response.statusText}` })
+            };
+        }
 
-        req.end();
-    });
+        const data = await response.json();
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(data)
+        };
+    } catch (error) {
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ error: error.message })
+        };
+    }
 };
