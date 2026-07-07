@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLGLFWsj2sYkBMIOkYsncyk46HsjGhN36mFOaDJg7rPDwjSulAimPNA6_N&s=10');
+            background-image: url('https://gstatic.com');
             background-repeat: repeat;
             background-attachment: fixed;
             margin: 0;
@@ -102,7 +102,8 @@
 
     <div class="container">
         <h1>Reniverse Shop</h1>
-        <div id="loading" class="loading">🎄 Cargando tus productos navideños...</div>
+        <!-- Mensaje personalizado con el reno -->
+        <div id="loading" class="loading">🦌 Cargando tus productos renianos...</div>
         <div id="productos-grid" class="grid"></div>
     </div>
 
@@ -110,8 +111,8 @@
         const grid = document.getElementById('productos-grid');
         const loading = document.getElementById('loading');
 
-        // Llamamos a la función con el nombre correcto del archivo backend
-        fetch('/.netlify/functions/printify')
+        // fetch corregido apuntando a obtener-productos de Netlify
+        fetch('/.netlify/functions/obtener-productos')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('El puente del servidor no respondió correctamente.');
@@ -121,8 +122,7 @@
             .then(res => {
                 loading.style.display = 'none';
                 
-                // Printify devuelve los productos directamente en la propiedad .data
-                // o directo en la raíz del JSON según la configuración del backend
+                // Mapeamos los datos de la respuesta
                 const productos = res.data || res || [];
                 
                 if (!Array.isArray(productos) || productos.length === 0) {
